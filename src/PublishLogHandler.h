@@ -29,54 +29,8 @@
  */
 class SdCardPrintHandler : public Print {
 public:
-	SdCardPrintHandler(SdFat &sd, uint8_t csPin, SPISettings spiSettings);
+	SdCardPrintHandler();
 	virtual ~SdCardPrintHandler();
-
-	/**
-	 * @brief Sets the log directory name. Default: "logs"
-	 *
-	 * The logs must always be in a subdirectory, so make sure you set it to something, setting it to an empty string
-	 * or NULL will disable logging.
-	 *
-	 * @param value The name to use instead of "logs" (const char *). This is not copied, as a constant string is normally
-	 * passed in. If you calculate it, make sure you put it in a static or allocated buffer!
-	 *
-	 */
-	inline SdCardPrintHandler &withLogsDirName(const char *value) { logsDirName = value; return *this; };
-
-	/**
-	 * @brief Desired file size in bytes. Default: 1000000 bytes (1 MB)
-	 *
-	 * Each log file will be approximately this size. It typically will be slightly larger than this, as the log is rotated
-	 * when the size is exceeded. If changed, it will only be enforced for the current log file; old log files are not
-	 * modified.
-	 *
-	 * @param value The maximum file size for a log file in bytes (size_t)
-	 */
-	inline SdCardPrintHandler &withDesiredFileSize(size_t value) { desiredFileSize = value; return *this; };
-
-	/**
-	 * @brief The number of files to keep. Default: 10
-	 *
-	 * The maximum number of log files to keep is enforced at startup, when a SD card is inserted, and when
-	 * the current log file is full.
-	 *
-	 * @param value Number of files to kee. Values are 1 <= num <= 999999 (size_t)
-	 */
-	inline SdCardPrintHandler &withMaxFilesToKeep(size_t value) { maxFilesToKeep = value; return *this; };
-
-	/**
-	 * @brief The number of milliseconds to between checks to see if the SD card is present. Default: 10000
-	 *
-	 * When you remove the SD card, it's necessary to reinitialize the SdFat library and check for the card.
-	 * Because of timeouts, this takes a while, so logging would become very slow if every attempt to log caused
-	 * this delay. The card check period reduces the frequency of checking to see if a card has been inserted.
-	 *
-	 * Note that as long as you leave the card in, you won't experience this.
-
-	 * @param value The time in milliseconds (unsigned ling)
-	 */
-	inline SdCardPrintHandler &withCardCheckPeriod(unsigned long value) { cardCheckPeriod = value; return *this; };
 
 	/**
 	 * @brief Set whether to sync the file system after every log entry. Default: true
@@ -111,25 +65,8 @@ public:
 	 */
     virtual size_t write(uint8_t);
 
-    /**
-     * @brief Checks the result of the last time sd.begin() was called
-     *
-     * This call determines whether the last call to sd.begin() succeeded or not. You might do this if you also
-     * need to call SdFat from your own code. This library needs to call sd.begin() internally to do it very
-     * early, and also after the SD card is ejected.
-     *
-     * @return true if begin was successful
-     */
-    inline bool getLastBeginResult() const { return lastBeginResult; }
-
 private:
     static const size_t BUF_SIZE = 128;  //!< size of buf[], the buffer to hold log messages. This improves write performance. Logs messages can be bigger than this.
-
-    /**
-     * Called to see if SD card is inserted, create the logs directory, and scan to see how many log files
-     * there are. Removes excess log files of there are more than maxFilesToKeep.
-     */
-    void scanCard();
 
     /**
      * Writes the current buffer in buf of length bufOffset to the SD card then resets the bufOffset to 0
@@ -139,51 +76,12 @@ private:
      */
     void writeBuf();
 
-    /**
-     * Formats the log file name. This is %06d.txt, and the string returned is a point to the shared
-     * nameBuf member variables.
-     */
-    const char *getName(int num);
-
-    /**
-     * Opens the log file numbered lastFileNum using the pattern in getName
-     */
-    bool openLogFile();
-
-    /**
-     * Checks the number of log files in fileNums and if there are more than maxFilesToKeep, deletes the
-     * lowest numbered.
-     */
-    void checkMaxFiles();
-
-    /**
-     * Callback passed to SdFat so it can determine the time for file timestamps
-     *
-     * Note: Timestamps will be in UTC not local time, and are unaffected by daylight saving.
-     */
-    static void dateTimeCallback(uint16_t* date, uint16_t* time);
-
-    SdFat &sd; //!< The SdFat object (typically a globally allocated object passed into the constructor for this object
-    uint8_t csPin; //!< The CS/SS pin for the SD card reader passed into the constructor for this object
-    SPISettings spiSettings; //!< SPI_FULL_SPEED or SPI_HALF_SPEED passed into the constructor for this object
-
     const char *logsDirName = "logs"; //!< Name of the logs directory, override using withLogsDirName()
-    size_t desiredFileSize = 1000000;  //!< Desired log file size, override using withDesiredFileSize()
-    size_t maxFilesToKeep = 10; //!< Maximum number of log files to keep, override using withMaxFilesToKeep()
-    unsigned long cardCheckPeriod = 10000; //!< How often to check when there's no SD card, override using withCardCheckPeriod (in milliseconds)
     bool syncEveryEntry = true; //!< Whether to sync the filesystem after each log entry. Override using withSyncEveryEntry().
     Stream *writeToStream = NULL; //!< Write to another Stream in addition to SD, override using withWriteToStream().
 
     size_t bufOffset = 0; //!< Offset we're currently writing to in buf
     uint8_t buf[BUF_SIZE];  //!< Buffer to hold partial log message.
-    char nameBuf[12]; //!< Shared buffer returned by getName()
-    bool needsScanCard = true; //!< true if we need to call scanCard() on the next log message
-    bool lastBeginResult = false; //!< Last result from sd.begin(). Will be false if there's not a valid SD card inserted.
-    int lastFileNum = 1; //!< Last file number found, and the one we're writing to.
-	FatFile logsDir; //!< FatFile for the logs directory (logsDirName, default is "logs")
-    FatFile curLogFile; //!< FatFile for the file we're currently writing to
-	std::set<int> fileNums; //!< set of file numbers in the logs directory
-	unsigned long lastCardCheck = 0; //!< millis() value at last time we checked for an SD card, see also cardCheckPeriod
 };
 
 
@@ -216,7 +114,7 @@ public:
 	 * @param level  (optional, default is LOG_LEVEL_INFO)
 	 * @param filters (optional, default is none)
 	 */
-	SdCardLogHandlerBuffer(uint8_t *buf, size_t bufSize, SdFat &sd, uint8_t csPin, SPISettings spiSettings, LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {});
+	SdCardLogHandlerBuffer(uint8_t *buf, size_t bufSize, LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {});
 	virtual ~SdCardLogHandlerBuffer();
 
 	/**
@@ -257,8 +155,8 @@ public:
 	 * @param level  (optional, default is LOG_LEVEL_INFO)
 	 * @param filters (optional, default is none)
 	 */
-	explicit SdCardLogHandler(SdFat &sd, uint8_t csPin, SPISettings spiSettings, LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {}) :
-		SdCardLogHandlerBuffer(ringBuffer, sizeof(ringBuffer), sd, csPin, spiSettings, level, filters) {};
+	explicit SdCardLogHandler(LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {}) :
+		SdCardLogHandlerBuffer(ringBuffer, sizeof(ringBuffer), level, filters) {};
 
 protected:
 	uint8_t ringBuffer[BUFFER_SIZE];
