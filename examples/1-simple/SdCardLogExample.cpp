@@ -10,7 +10,7 @@ SdFat sd;
 
 
 // API change in 0.1.0: You must specify the size of the log handler buffer and call both logHandler.setup() and logHandler.loop()!
-SdCardLogHandler<2048> logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
+PublishLogHandler<2048> logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
 
 size_t counter = 0;
 unsigned long lastCounterUpdate = 0;

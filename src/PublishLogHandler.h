@@ -1,9 +1,8 @@
-#ifndef __SDCARDLOGHANDLERRK_H
-#define __SDCARDLOGHANDLERRK_H
+#ifndef __PUBLISHLOGHANDLER_H
+#define __PUBLISHLOGHANDLER_H
 
 #include "Particle.h"
 #include "RingBuffer.h"
-#include "SdFat.h"
 
 #include <set>
 
@@ -18,7 +17,7 @@
  * const int SD_CHIP_SELECT = A2;
  * SdFat sd;
  *
- * SdCardLogHandler logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
+ * PublishLogHandler logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
  * ~~~~
  *
  * You can pass additional options using the fluent-style methods beginning with "with" like withLogsDirName().
@@ -27,10 +26,10 @@
  * by Print. Data is buffered until the \n, then written to the card, for performance reasons and to avoid splitting
  * a line between multiple files.
  */
-class SdCardPrintHandler : public Print {
+class PublishPrintHandler : public Print {
 public:
-	SdCardPrintHandler();
-	virtual ~SdCardPrintHandler();
+	PublishPrintHandler();
+	virtual ~PublishPrintHandler();
 
 	/**
 	 * @brief Set whether to sync the file system after every log entry. Default: true
@@ -41,14 +40,14 @@ public:
 	 *
 	 * @param value The value to set (size_t)
 	 */
-	inline SdCardPrintHandler &withSyncEveryEntry(size_t value) { syncEveryEntry = value; return *this; };
+	inline PublishPrintHandler &withSyncEveryEntry(size_t value) { syncEveryEntry = value; return *this; };
 
 	/**
 	 * @brief The default is to log to Serial as well as SD card; to only log to SD card call this method.
 	 *
 	 * If you want to log to a different stream (like Serial1), use withWriteToStream() instead.
 	 */
-	inline SdCardPrintHandler &withNoSerialLogging() { writeToStream = NULL; return *this; };
+	inline PublishPrintHandler &withNoSerialLogging() { writeToStream = NULL; return *this; };
 
 	/**
 	 * @brief Write to a different Stream, such as Serial1. Default: Serial
@@ -57,7 +56,7 @@ public:
 	 *
 	 * Only one stream is supported. Setting it again replaces the last setting.
 	 */
-	inline SdCardPrintHandler &withWriteToStream(Stream *value) { writeToStream = value; return *this; };
+	inline PublishPrintHandler &withWriteToStream(Stream *value) { writeToStream = value; return *this; };
 
 
 	/**
@@ -96,12 +95,12 @@ private:
  * const int SD_CHIP_SELECT = A2;
  * SdFat sd;
  *
- * SdCardLogHandler logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
+ * PublishLogHandler logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
  * ~~~~
  *
  * You can pass additional options using the fluent-style methods beginning with "with" like withLogsDirName().
  */
-class SdCardLogHandlerBuffer : public StreamLogHandler, public SdCardPrintHandler, public RingBuffer<uint8_t> {
+class PublishLogHandlerBuffer : public StreamLogHandler, public PublishPrintHandler, public RingBuffer<uint8_t> {
 public:
 	/**
 	 * @brief Constructor. The object is normally instantiated as a global object.
@@ -114,8 +113,8 @@ public:
 	 * @param level  (optional, default is LOG_LEVEL_INFO)
 	 * @param filters (optional, default is none)
 	 */
-	SdCardLogHandlerBuffer(uint8_t *buf, size_t bufSize, LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {});
-	virtual ~SdCardLogHandlerBuffer();
+	PublishLogHandlerBuffer(uint8_t *buf, size_t bufSize, LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {});
+	virtual ~PublishLogHandlerBuffer();
 
 	/**
 	 * @brief Must be called from setup (added in 0.0.6)
@@ -144,7 +143,7 @@ protected:
 };
 
 template<size_t BUFFER_SIZE>
-class SdCardLogHandler : public SdCardLogHandlerBuffer {
+class PublishLogHandler : public PublishLogHandlerBuffer {
 public:
 	/**
 	 * @brief Constructor. The object is normally instantiated as a global object.
@@ -155,12 +154,12 @@ public:
 	 * @param level  (optional, default is LOG_LEVEL_INFO)
 	 * @param filters (optional, default is none)
 	 */
-	explicit SdCardLogHandler(LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {}) :
-		SdCardLogHandlerBuffer(ringBuffer, sizeof(ringBuffer), level, filters) {};
+	explicit PublishLogHandler(LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {}) :
+		PublishLogHandlerBuffer(ringBuffer, sizeof(ringBuffer), level, filters) {};
 
 protected:
 	uint8_t ringBuffer[BUFFER_SIZE];
 };
 
 
-#endif /* __SDCARDLOGHANDLERRK_H */
+#endif /* __PUBLISHLOGHANDLER_H */

@@ -29,22 +29,22 @@
 //
 //
 
-SdCardLogHandlerBuffer::SdCardLogHandlerBuffer(uint8_t *buf, size_t bufSize, LogLevel level, LogCategoryFilters filters) :
+PublishLogHandlerBuffer::PublishLogHandlerBuffer(uint8_t *buf, size_t bufSize, LogLevel level, LogCategoryFilters filters) :
 	StreamLogHandler(*this, level, filters), RingBuffer(buf, bufSize) {
 
-	// This was the old default for SdCardLogHandler. The subclass SdCardPrintHandler now defaults to NULL.
+	// This was the old default for PublishLogHandler. The subclass PublishPrintHandler now defaults to NULL.
 	withWriteToStream(&Serial);
 }
 
-SdCardLogHandlerBuffer::~SdCardLogHandlerBuffer() {
+PublishLogHandlerBuffer::~PublishLogHandlerBuffer() {
 }
 
-void SdCardLogHandlerBuffer::setup() {
+void PublishLogHandlerBuffer::setup() {
 	// Add this handler into the system log manager
 	LogManager::instance()->addHandler(this);
 }
 
-void SdCardLogHandlerBuffer::loop() {
+void PublishLogHandlerBuffer::loop() {
 
 	while(true) {
 		uint8_t c;
@@ -53,12 +53,12 @@ void SdCardLogHandlerBuffer::loop() {
 		if (!bResult) {
 			break;
 		}
-		SdCardPrintHandler::write(c);
+		PublishPrintHandler::write(c);
 	}
 }
 
 
-size_t SdCardLogHandlerBuffer::write(uint8_t c) {
+size_t PublishLogHandlerBuffer::write(uint8_t c) {
 
 	return RingBuffer::write(&c) ? 1 : 0;
 }
@@ -66,15 +66,15 @@ size_t SdCardLogHandlerBuffer::write(uint8_t c) {
 //
 //
 //
-SdCardPrintHandler::SdCardPrintHandler(){
+PublishPrintHandler::PublishPrintHandler(){
 }
 
-SdCardPrintHandler::~SdCardPrintHandler() {
+PublishPrintHandler::~PublishPrintHandler() {
 
 }
 
 
-size_t SdCardPrintHandler::write(uint8_t c) {
+size_t PublishPrintHandler::write(uint8_t c) {
 
 	buf[bufOffset++] = c;
 	if (bufOffset >= BUF_SIZE || c == '\n') {
@@ -87,7 +87,7 @@ size_t SdCardPrintHandler::write(uint8_t c) {
 
 
 
-void SdCardPrintHandler::writeBuf() {
+void PublishPrintHandler::writeBuf() {
 
 	if (writeToStream) {
 		writeToStream->write(buf, bufOffset);

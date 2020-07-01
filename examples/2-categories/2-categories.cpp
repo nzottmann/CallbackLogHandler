@@ -10,10 +10,10 @@ SdFat sd;
 
 // Only log errors and app.sd info level log messages to the SD card
 // API change in 0.1.0: You must specify the size of the log handler buffer and call both logHandler.setup() and logHandler.loop()!
-SdCardLogHandler<2048> sdLogHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED, LOG_LEVEL_ERROR, {
+PublishLogHandler<2048> sdLogHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED, LOG_LEVEL_ERROR, {
 	{ "app.sd", LOG_LEVEL_INFO }
 });
-// Turn off serial logging in the SdCardLogHandler to avoid logging twice
+// Turn off serial logging in the PublishLogHandler to avoid logging twice
 STARTUP(sdLogHandler.withNoSerialLogging());
 
 // Use LogToSD.info() instead of Log.info(), etc. to write to the SD card
