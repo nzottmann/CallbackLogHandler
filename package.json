@@ -1,5 +1,5 @@
 {
-    "name": "SdCardLogHandlerRK",
+    "name": "PublishLogHandler",
     "version": "0.0.1",
     "description": "Travis build script",
     "private": true,
