@@ -66,7 +66,7 @@ public:
     virtual size_t write(uint8_t);
 
 private:
-    static const size_t BUF_SIZE = 128;  //!< size of buf[], the buffer to hold log messages. This improves write performance. Logs messages can be bigger than this.
+    static const size_t BUF_SIZE = 622;  //!< size of buf[], the buffer to hold log messages. This improves write performance. Logs messages can be bigger than this.
 
     /**
      * Writes the current buffer in buf of length bufOffset to the SD card then resets the bufOffset to 0

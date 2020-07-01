@@ -94,7 +94,10 @@ void SdCardPrintHandler::writeBuf() {
 	}
 
 	if (Particle.connected()) {
-		buf[bufOffset] = '\0';
+		// Terminate log message
+		buf[min(bufOffset, BUF_SIZE-1)] = '\0';
+
+		// Publish log message
 		Particle.publish("log", (char*)buf, PRIVATE);
 	}
 
