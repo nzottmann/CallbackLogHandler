@@ -90,21 +90,22 @@ void PublishPrintHandler::writeBuf() {
 		writeToStream->write(callbackBuffer, bufOffset);
 	}
 
-	if(!complete) {
-		if(callbackBuffer[bufOffset-1] == '\n') complete = true;
-		bufOffset = 0;
-		return;
+	// If !splitEntries, discard all but first callbacks for each log message
+	if(!splitEntries) {
+		if(!complete) {
+			if(callbackBuffer[bufOffset-1] == '\n') complete = true;
+			bufOffset = 0;
+			return;
+		}
+		if(callbackBuffer[bufOffset-1] != '\n') complete = false;
 	}
-	if(callbackBuffer[bufOffset-1] != '\n') complete = false;
 
-	if (Particle.connected()) {
-		// Terminate log message
-		if(bufOffset > callbackBufferSize-1) bufOffset = callbackBufferSize-1;
-		callbackBuffer[bufOffset++] = '\0';
+	// Terminate log message
+	if(bufOffset > callbackBufferSize-1) bufOffset = callbackBufferSize-1;
+	callbackBuffer[bufOffset++] = '\0';
 
-		// Publish log message
-		logCallback(callbackBuffer, bufOffset);
-	}
+	// Publish log message
+	logCallback(callbackBuffer, bufOffset);
 
 	// Start over at beginning of buffer
 	bufOffset = 0;

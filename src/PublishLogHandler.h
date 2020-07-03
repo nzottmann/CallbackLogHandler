@@ -40,7 +40,7 @@ public:
 	 *
 	 * @param value The value to set (size_t)
 	 */
-	inline PublishPrintHandler &withSyncEveryEntry(size_t value) { syncEveryEntry = value; return *this; };
+	inline PublishPrintHandler &withSplitEntries(size_t value) { splitEntries = value; return *this; };
 
 	/**
 	 * @brief The default is to log to Serial as well as SD card; to only log to SD card call this method.
@@ -74,7 +74,7 @@ private:
     void writeBuf();
 
     const char *logsDirName = "logs"; //!< Name of the logs directory, override using withLogsDirName()
-    bool syncEveryEntry = true; //!< Whether to sync the filesystem after each log entry. Override using withSyncEveryEntry().
+    bool splitEntries = false; //!< Whether to split entries not fitting in callbackBuffer over multiple callbacks. Override using withSplitEntries().
     Stream *writeToStream = NULL; //!< Write to another Stream in addition to SD, override using withWriteToStream().
 
     size_t bufOffset = 0; //!< Offset we're currently writing to in buf
