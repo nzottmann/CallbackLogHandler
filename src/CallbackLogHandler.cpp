@@ -1,22 +1,22 @@
 #include "Particle.h"
 
-#include "PublishLogHandler.h"
+#include "CallbackLogHandler.h"
 
 // Define the debug logging level here
 // 0 = Off
 // 1 = Normal
 // 2 = High
-#define PUBLISH_LOGHANDLER_DEBUG_LEVEL 1
+#define CALLBACK_LOGHANDLER_DEBUG_LEVEL 1
 
 // Don't change these, just change the debugging level above
 // Note: must use Serial.printlnf here, not Log.info, as these are called from the log handler itself!
-#if PUBLISH_LOGHANDLER_DEBUG_LEVEL >= 1
+#if CALLBACK_LOGHANDLER_DEBUG_LEVEL >= 1
 #define DEBUG_NORMAL(x) Serial.printlnf x
 #else
 #define DEBUG_NORMAL(x)
 #endif
 
-#if PUBLISH_LOGHANDLER_DEBUG_LEVEL >= 2
+#if CALLBACK_LOGHANDLER_DEBUG_LEVEL >= 2
 #define DEBUG_HIGH(x) Serial.printlnf x
 #else
 #define DEBUG_HIGH(x)
@@ -28,22 +28,21 @@
 //
 //
 //
-PublishLogHandlerBuffer::PublishLogHandlerBuffer(uint8_t *buf, size_t bufSize, void (* logCallback)(uint8_t* buf, size_t length), uint8_t* callbackBuffer, size_t callbackBufferSize, LogLevel level, LogCategoryFilters filters) :
-	StreamLogHandler(*this, level, filters), PublishPrintHandler(logCallback, callbackBuffer, callbackBufferSize), RingBuffer(buf, bufSize) {
+CallbackLogHandlerBuffer::CallbackLogHandlerBuffer(uint8_t *buf, size_t bufSize, void (* logCallback)(uint8_t* buf, size_t length), uint8_t* callbackBuffer, size_t callbackBufferSize, LogLevel level, LogCategoryFilters filters) :
+	StreamLogHandler(*this, level, filters), CallbackPrintHandler(logCallback, callbackBuffer, callbackBufferSize), RingBuffer(buf, bufSize) {
 
-	// This was the old default for PublishLogHandler. The subclass PublishPrintHandler now defaults to NULL.
 	withWriteToStream(&Serial);
 }
 
-PublishLogHandlerBuffer::~PublishLogHandlerBuffer() {
+CallbackLogHandlerBuffer::~CallbackLogHandlerBuffer() {
 }
 
-void PublishLogHandlerBuffer::setup() {
+void CallbackLogHandlerBuffer::setup() {
 	// Add this handler into the system log manager
 	LogManager::instance()->addHandler(this);
 }
 
-void PublishLogHandlerBuffer::loop() {
+void CallbackLogHandlerBuffer::loop() {
 
 	while(true) {
 		uint8_t c;
@@ -52,12 +51,12 @@ void PublishLogHandlerBuffer::loop() {
 		if (!bResult) {
 			break;
 		}
-		PublishPrintHandler::write(c);
+		CallbackPrintHandler::write(c);
 	}
 }
 
 
-size_t PublishLogHandlerBuffer::write(uint8_t c) {
+size_t CallbackLogHandlerBuffer::write(uint8_t c) {
 
 	return RingBuffer::write(&c) ? 1 : 0;
 }
@@ -66,12 +65,12 @@ size_t PublishLogHandlerBuffer::write(uint8_t c) {
 //
 //
 
-PublishPrintHandler::~PublishPrintHandler() {
+CallbackPrintHandler::~CallbackPrintHandler() {
 
 }
 
 
-size_t PublishPrintHandler::write(uint8_t c) {
+size_t CallbackPrintHandler::write(uint8_t c) {
 
 	callbackBuffer[bufOffset++] = c;
 	if (bufOffset >= callbackBufferSize || c == '\n') {
@@ -84,7 +83,7 @@ size_t PublishPrintHandler::write(uint8_t c) {
 
 
 
-void PublishPrintHandler::writeBuf() {
+void CallbackPrintHandler::writeBuf() {
 	static bool complete = true;
 	if (writeToStream) {
 		writeToStream->write(callbackBuffer, bufOffset);
@@ -104,7 +103,7 @@ void PublishPrintHandler::writeBuf() {
 	if(bufOffset > callbackBufferSize-1) bufOffset = callbackBufferSize-1;
 	callbackBuffer[bufOffset++] = '\0';
 
-	// Publish log message
+	// Callback with log message
 	logCallback(callbackBuffer, bufOffset);
 
 	// Start over at beginning of buffer

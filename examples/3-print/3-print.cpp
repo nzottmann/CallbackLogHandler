@@ -8,7 +8,7 @@ SYSTEM_THREAD(ENABLED);
 const int SD_CHIP_SELECT = D5;
 SdFat sd;
 
-PublishPrintHandler printToCard(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
+CallbackPrintHandler printToCard(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
 
 size_t counter = 0;
 

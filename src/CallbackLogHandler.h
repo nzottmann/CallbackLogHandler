@@ -1,5 +1,5 @@
-#ifndef __PUBLISHLOGHANDLER_H
-#define __PUBLISHLOGHANDLER_H
+#ifndef __CALLBACKLOGHANDLER_H
+#define __CALLBACKLOGHANDLER_H
 
 #include "Particle.h"
 #include "RingBuffer.h"
@@ -17,7 +17,7 @@
  * const int SD_CHIP_SELECT = A2;
  * SdFat sd;
  *
- * PublishLogHandler logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
+ * CallbackLogHandler logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
  * ~~~~
  *
  * You can pass additional options using the fluent-style methods beginning with "with" like withLogsDirName().
@@ -26,10 +26,10 @@
  * by Print. Data is buffered until the \n, then written to the card, for performance reasons and to avoid splitting
  * a line between multiple files.
  */
-class PublishPrintHandler : public Print {
+class CallbackPrintHandler : public Print {
 public:
-	PublishPrintHandler(void (* logCallback)(uint8_t* buf, size_t length), uint8_t* callbackBuffer, size_t callbackBufferSize) : logCallback(logCallback), callbackBuffer(callbackBuffer), callbackBufferSize(callbackBufferSize) {};
-	virtual ~PublishPrintHandler();
+	CallbackPrintHandler(void (* logCallback)(uint8_t* buf, size_t length), uint8_t* callbackBuffer, size_t callbackBufferSize) : logCallback(logCallback), callbackBuffer(callbackBuffer), callbackBufferSize(callbackBufferSize) {};
+	virtual ~CallbackPrintHandler();
 
 	/**
 	 * @brief Set whether to sync the file system after every log entry. Default: true
@@ -40,14 +40,14 @@ public:
 	 *
 	 * @param value The value to set (size_t)
 	 */
-	inline PublishPrintHandler &withSplitEntries(size_t value) { splitEntries = value; return *this; };
+	inline CallbackPrintHandler &withSplitEntries(size_t value) { splitEntries = value; return *this; };
 
 	/**
 	 * @brief The default is to log to Serial as well as SD card; to only log to SD card call this method.
 	 *
 	 * If you want to log to a different stream (like Serial1), use withWriteToStream() instead.
 	 */
-	inline PublishPrintHandler &withNoSerialLogging() { writeToStream = NULL; return *this; };
+	inline CallbackPrintHandler &withNoSerialLogging() { writeToStream = NULL; return *this; };
 
 	/**
 	 * @brief Write to a different Stream, such as Serial1. Default: Serial
@@ -56,7 +56,7 @@ public:
 	 *
 	 * Only one stream is supported. Setting it again replaces the last setting.
 	 */
-	inline PublishPrintHandler &withWriteToStream(Stream *value) { writeToStream = value; return *this; };
+	inline CallbackPrintHandler &withWriteToStream(Stream *value) { writeToStream = value; return *this; };
 
 
 	/**
@@ -95,12 +95,12 @@ private:
  * const int SD_CHIP_SELECT = A2;
  * SdFat sd;
  *
- * PublishLogHandler logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
+ * CallbackLogHandler logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
  * ~~~~
  *
  * You can pass additional options using the fluent-style methods beginning with "with" like withLogsDirName().
  */
-class PublishLogHandlerBuffer : public StreamLogHandler, public PublishPrintHandler, public RingBuffer<uint8_t> {
+class CallbackLogHandlerBuffer : public StreamLogHandler, public CallbackPrintHandler, public RingBuffer<uint8_t> {
 public:
 	/**
 	 * @brief Constructor. The object is normally instantiated as a global object.
@@ -113,8 +113,8 @@ public:
 	 * @param level  (optional, default is LOG_LEVEL_INFO)
 	 * @param filters (optional, default is none)
 	 */
-	PublishLogHandlerBuffer(uint8_t *buf, size_t bufSize, void (* logCallback)(uint8_t* buf, size_t length), uint8_t* callbackBuffer, size_t callbackBufferSize, LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {});
-	virtual ~PublishLogHandlerBuffer();
+	CallbackLogHandlerBuffer(uint8_t *buf, size_t bufSize, void (* logCallback)(uint8_t* buf, size_t length), uint8_t* callbackBuffer, size_t callbackBufferSize, LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {});
+	virtual ~CallbackLogHandlerBuffer();
 
 	/**
 	 * @brief Must be called from setup (added in 0.0.6)
@@ -143,7 +143,7 @@ protected:
 };
 
 template<size_t BUFFER_SIZE, size_t CB_BUFFER_SIZE>
-class PublishLogHandler : public PublishLogHandlerBuffer {
+class CallbackLogHandler : public CallbackLogHandlerBuffer {
 public:
 	/**
 	 * @brief Constructor. The object is normally instantiated as a global object.
@@ -154,8 +154,8 @@ public:
 	 * @param level  (optional, default is LOG_LEVEL_INFO)
 	 * @param filters (optional, default is none)
 	 */
-	explicit PublishLogHandler(void (* logCallback)(uint8_t* buf, size_t length), LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {}) :
-		PublishLogHandlerBuffer(ringBuffer, sizeof(ringBuffer), logCallback, callbackBuffer, CB_BUFFER_SIZE, level, filters) {};
+	explicit CallbackLogHandler(void (* logCallback)(uint8_t* buf, size_t length), LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {}) :
+		CallbackLogHandlerBuffer(ringBuffer, sizeof(ringBuffer), logCallback, callbackBuffer, CB_BUFFER_SIZE, level, filters) {};
 
 protected:
 	uint8_t ringBuffer[BUFFER_SIZE];
@@ -163,4 +163,4 @@ protected:
 };
 
 
-#endif /* __PUBLISHLOGHANDLER_H */
+#endif /* __CALLBACKLOGHANDLER_H */
