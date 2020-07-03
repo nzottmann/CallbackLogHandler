@@ -22,12 +22,10 @@
 #define DEBUG_HIGH(x)
 #endif
 
-
-
-
 //
 //
 //
+
 CallbackLogHandlerBuffer::CallbackLogHandlerBuffer(uint8_t *buf, size_t bufSize, void (* logCallback)(uint8_t* buf, size_t length), uint8_t* callbackBuffer, size_t callbackBufferSize, LogLevel level, LogCategoryFilters filters) :
 	StreamLogHandler(*this, level, filters), CallbackPrintHandler(logCallback, callbackBuffer, callbackBufferSize), RingBuffer(buf, bufSize) {
 
@@ -43,7 +41,6 @@ void CallbackLogHandlerBuffer::setup() {
 }
 
 void CallbackLogHandlerBuffer::loop() {
-
 	while(true) {
 		uint8_t c;
 
@@ -57,18 +54,12 @@ void CallbackLogHandlerBuffer::loop() {
 
 
 size_t CallbackLogHandlerBuffer::write(uint8_t c) {
-
 	return RingBuffer::write(&c) ? 1 : 0;
 }
 
 //
 //
 //
-
-CallbackPrintHandler::~CallbackPrintHandler() {
-
-}
-
 
 size_t CallbackPrintHandler::write(uint8_t c) {
 
@@ -81,15 +72,13 @@ size_t CallbackPrintHandler::write(uint8_t c) {
 	return 1;
 }
 
-
-
 void CallbackPrintHandler::writeBuf() {
 	static bool complete = true;
 	if (writeToStream) {
 		writeToStream->write(callbackBuffer, bufOffset);
 	}
 
-	// If !splitEntries, discard all but first callbacks for each log message
+	// If !splitEntries, discard all but first callback for each log message
 	if(!splitEntries) {
 		if(!complete) {
 			if(callbackBuffer[bufOffset-1] == '\n') complete = true;

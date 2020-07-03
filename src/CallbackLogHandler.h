@@ -8,23 +8,12 @@
 
 
 /**
- * @brief Class for writing a data stream to SD card
+ * @brief Class for writing a data stream
  *
- * You normally instantiate one of these as a global variable, passing in the SdFat object and the parameters
- * you'd normally pass to SdFat::begin().
- *
- * ~~~~{.c}
- * const int SD_CHIP_SELECT = A2;
- * SdFat sd;
- *
- * CallbackLogHandler logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
- * ~~~~
- *
- * You can pass additional options using the fluent-style methods beginning with "with" like withLogsDirName().
+ * You can pass additional options using the fluent-style methods beginning with "with" like withSplitEntries().
  *
  * This class is a subclass of Print, so you can use all of the overloads of print, println, and printf that are supported
- * by Print. Data is buffered until the \n, then written to the card, for performance reasons and to avoid splitting
- * a line between multiple files.
+ * by Print. Data is buffered until the \n, then written
  */
 class CallbackPrintHandler : public Print {
 public:
@@ -32,18 +21,18 @@ public:
 	virtual ~CallbackPrintHandler();
 
 	/**
-	 * @brief Set whether to sync the file system after every log entry. Default: true
+	 * @brief Set whether to split entries exceeding the callbackBufferSize. Default: false
 	 *
-	 * Setting this to false dramatically improves the performance, but it also makes it much more likely that
-	 * in the case of a reboot, the last log messages will be lost. The SdFat library normally only flushes the
-	 * file in 512 byte increments so if you log infrequently, you could lose a number of log messages.
+	 * Log messages are written at a line break \n. If a log message exceeds
+	 * callbackBufferSize, the leftover is discarded. If withSplitEntries is true, the callback is called
+	 * for each part of the log message fitting in callbackBuffer
 	 *
-	 * @param value The value to set (size_t)
+	 * @param value The value to set (bool)
 	 */
-	inline CallbackPrintHandler &withSplitEntries(size_t value) { splitEntries = value; return *this; };
+	inline CallbackPrintHandler &withSplitEntries(bool value) { splitEntries = value; return *this; };
 
 	/**
-	 * @brief The default is to log to Serial as well as SD card; to only log to SD card call this method.
+	 * @brief The default is to log to Serial as well as callback; to only log to callback call this method.
 	 *
 	 * If you want to log to a different stream (like Serial1), use withWriteToStream() instead.
 	 */
@@ -52,7 +41,7 @@ public:
 	/**
 	 * @brief Write to a different Stream, such as Serial1. Default: Serial
 	 *
-	 * @param value The stream to write log output to (such as &Serial1) or NULL to only write to the SD card.
+	 * @param value The stream to write log output to (such as &Serial1) or NULL to only write to the callback.
 	 *
 	 * Only one stream is supported. Setting it again replaces the last setting.
 	 */
@@ -66,39 +55,26 @@ public:
 
 private:
     /**
-     * Writes the current buffer in buf of length bufOffset to the SD card then resets the bufOffset to 0
+     * Writes the current buffer in buf of length bufOffset to the callback, adds zero termination \0, then resets the bufOffset to 0
      *
      * If writeToStream is non-null, its write method is called to write out the buffer as well. This
      * default to &Serial, but you can set it to &Serial1, or other streams.
      */
     void writeBuf();
 
-    const char *logsDirName = "logs"; //!< Name of the logs directory, override using withLogsDirName()
     bool splitEntries = false; //!< Whether to split entries not fitting in callbackBuffer over multiple callbacks. Override using withSplitEntries().
-    Stream *writeToStream = NULL; //!< Write to another Stream in addition to SD, override using withWriteToStream().
+    Stream *writeToStream = NULL; //!< Write to another Stream in addition to callback, override using withWriteToStream().
 
     size_t bufOffset = 0; //!< Offset we're currently writing to in buf
 	void (* logCallback)(uint8_t* buf, size_t length);
 	uint8_t* callbackBuffer; //!< Buffer to hold partial log message.
-	size_t callbackBufferSize; //!< size of buf[], the buffer to hold log messages. This improves write performance. Logs messages can be bigger than this.
+	size_t callbackBufferSize; //!< size of callbackBuffer, the buffer to hold log messages. Logs messages can be bigger than this.
 };
 
 
 /**
- * @brief Class for logging to SD card
+ * @brief Class for logging
  *
- * You normally instantiate one of these as a global variable, passing in the SdFat object and the parameters
- * you'd normally pass to SdFat::begin(). You can optionally pass the LogLevel and LogCategoryFilters parameters
- * you'd pass to the LogHandler constructor.
- *
- * ~~~~{.c}
- * const int SD_CHIP_SELECT = A2;
- * SdFat sd;
- *
- * CallbackLogHandler logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
- * ~~~~
- *
- * You can pass additional options using the fluent-style methods beginning with "with" like withLogsDirName().
  */
 class CallbackLogHandlerBuffer : public StreamLogHandler, public CallbackPrintHandler, public RingBuffer<uint8_t> {
 public:
@@ -107,9 +83,9 @@ public:
 	 *
 	 * @param buf Ring buffer pointer
 	 * @param bufSize Ring buffer size
-	 * @param sd The SdFat object, normally allocated a global object.
-	 * @param csPin The pin used for the SPI chip select for the SD card reader
-	 * @param spiSettings Usually either SPI_FULL_SPEED or SPI_HALF_SPEED. You can also use a SPISettings object.
+	 * @param logCallback The user defined callback for logging
+	 * @param callbackBuffer The buffer passed to logCallback, containing a single log message of part of it
+	 * @param callbackBufferSize Size of callbackBuffer
 	 * @param level  (optional, default is LOG_LEVEL_INFO)
 	 * @param filters (optional, default is none)
 	 */
@@ -117,7 +93,7 @@ public:
 	virtual ~CallbackLogHandlerBuffer();
 
 	/**
-	 * @brief Must be called from setup (added in 0.0.6)
+	 * @brief Must be called from setup
 	 *
 	 * On mesh devices, it's not safe to set up the log handler at global object construction time and you will likely
 	 * fault.
@@ -125,11 +101,11 @@ public:
 	void setup();
 
     /**
-     * @brief Must be called from loop (added in 0.1.0)
+     * @brief Must be called from loop
      *
      * This method must be called from loop(), ideally on every call to loop. The reason is
-     * that it's not really safe to call SPI from the log handler, and it's best to buffer the data and
-     * write it out from loop to avoid SPI conflicts.
+     * that it's not really safe to call shared resources from the log handler, and it's best to buffer the data and
+     * call the callback from loop to avoid conflicts.
      */
     void loop();
 
@@ -148,9 +124,7 @@ public:
 	/**
 	 * @brief Constructor. The object is normally instantiated as a global object.
 	 *
-	 * @param sd The SdFat object, normally allocated a global object.
-	 * @param csPin The pin used for the SPI chip select for the SD card reader
-	 * @param spiSettings Usually either SPI_FULL_SPEED or SPI_HALF_SPEED. You can also use a SPISettings object.
+	 * @param logCallback The user defined callback for logging
 	 * @param level  (optional, default is LOG_LEVEL_INFO)
 	 * @param filters (optional, default is none)
 	 */
