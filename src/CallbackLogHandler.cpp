@@ -61,6 +61,10 @@ size_t CallbackLogHandlerBuffer::write(uint8_t c) {
 //
 //
 
+CallbackPrintHandler::~CallbackPrintHandler() {
+
+}
+
 size_t CallbackPrintHandler::write(uint8_t c) {
 
 	callbackBuffer[bufOffset++] = c;
