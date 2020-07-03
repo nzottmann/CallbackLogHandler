@@ -28,7 +28,7 @@
  */
 class PublishPrintHandler : public Print {
 public:
-	PublishPrintHandler();
+	PublishPrintHandler(void (* logCallback)(uint8_t* buf, size_t length), uint8_t* callbackBuffer, size_t callbackBufferSize) : logCallback(logCallback), callbackBuffer(callbackBuffer), callbackBufferSize(callbackBufferSize) {};
 	virtual ~PublishPrintHandler();
 
 	/**
@@ -65,8 +65,6 @@ public:
     virtual size_t write(uint8_t);
 
 private:
-    static const size_t BUF_SIZE = 622;  //!< size of buf[], the buffer to hold log messages. This improves write performance. Logs messages can be bigger than this.
-
     /**
      * Writes the current buffer in buf of length bufOffset to the SD card then resets the bufOffset to 0
      *
@@ -80,7 +78,9 @@ private:
     Stream *writeToStream = NULL; //!< Write to another Stream in addition to SD, override using withWriteToStream().
 
     size_t bufOffset = 0; //!< Offset we're currently writing to in buf
-    uint8_t buf[BUF_SIZE];  //!< Buffer to hold partial log message.
+	void (* logCallback)(uint8_t* buf, size_t length);
+	uint8_t* callbackBuffer; //!< Buffer to hold partial log message.
+	size_t callbackBufferSize; //!< size of buf[], the buffer to hold log messages. This improves write performance. Logs messages can be bigger than this.
 };
 
 
@@ -113,7 +113,7 @@ public:
 	 * @param level  (optional, default is LOG_LEVEL_INFO)
 	 * @param filters (optional, default is none)
 	 */
-	PublishLogHandlerBuffer(uint8_t *buf, size_t bufSize, LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {});
+	PublishLogHandlerBuffer(uint8_t *buf, size_t bufSize, void (* logCallback)(uint8_t* buf, size_t length), uint8_t* callbackBuffer, size_t callbackBufferSize, LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {});
 	virtual ~PublishLogHandlerBuffer();
 
 	/**
@@ -142,7 +142,7 @@ protected:
 
 };
 
-template<size_t BUFFER_SIZE>
+template<size_t BUFFER_SIZE, size_t CB_BUFFER_SIZE>
 class PublishLogHandler : public PublishLogHandlerBuffer {
 public:
 	/**
@@ -154,11 +154,12 @@ public:
 	 * @param level  (optional, default is LOG_LEVEL_INFO)
 	 * @param filters (optional, default is none)
 	 */
-	explicit PublishLogHandler(LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {}) :
-		PublishLogHandlerBuffer(ringBuffer, sizeof(ringBuffer), level, filters) {};
+	explicit PublishLogHandler(void (* logCallback)(uint8_t* buf, size_t length), LogLevel level = LOG_LEVEL_INFO, LogCategoryFilters filters = {}) :
+		PublishLogHandlerBuffer(ringBuffer, sizeof(ringBuffer), logCallback, callbackBuffer, CB_BUFFER_SIZE, level, filters) {};
 
 protected:
 	uint8_t ringBuffer[BUFFER_SIZE];
+	uint8_t callbackBuffer[CB_BUFFER_SIZE]; 
 };
 
 

@@ -28,9 +28,8 @@
 //
 //
 //
-
-PublishLogHandlerBuffer::PublishLogHandlerBuffer(uint8_t *buf, size_t bufSize, LogLevel level, LogCategoryFilters filters) :
-	StreamLogHandler(*this, level, filters), RingBuffer(buf, bufSize) {
+PublishLogHandlerBuffer::PublishLogHandlerBuffer(uint8_t *buf, size_t bufSize, void (* logCallback)(uint8_t* buf, size_t length), uint8_t* callbackBuffer, size_t callbackBufferSize, LogLevel level, LogCategoryFilters filters) :
+	StreamLogHandler(*this, level, filters), PublishPrintHandler(logCallback, callbackBuffer, callbackBufferSize), RingBuffer(buf, bufSize) {
 
 	// This was the old default for PublishLogHandler. The subclass PublishPrintHandler now defaults to NULL.
 	withWriteToStream(&Serial);
@@ -66,8 +65,6 @@ size_t PublishLogHandlerBuffer::write(uint8_t c) {
 //
 //
 //
-PublishPrintHandler::PublishPrintHandler(){
-}
 
 PublishPrintHandler::~PublishPrintHandler() {
 
@@ -76,8 +73,8 @@ PublishPrintHandler::~PublishPrintHandler() {
 
 size_t PublishPrintHandler::write(uint8_t c) {
 
-	buf[bufOffset++] = c;
-	if (bufOffset >= BUF_SIZE || c == '\n') {
+	callbackBuffer[bufOffset++] = c;
+	if (bufOffset >= callbackBufferSize || c == '\n') {
 		// Buffer is full or have the LF in CRLF, write it out
 		writeBuf();
 	}
@@ -88,17 +85,25 @@ size_t PublishPrintHandler::write(uint8_t c) {
 
 
 void PublishPrintHandler::writeBuf() {
-
+	static bool complete = true;
 	if (writeToStream) {
-		writeToStream->write(buf, bufOffset);
+		writeToStream->write(callbackBuffer, bufOffset);
 	}
+
+	if(!complete) {
+		if(callbackBuffer[bufOffset-1] == '\n') complete = true;
+		bufOffset = 0;
+		return;
+	}
+	if(callbackBuffer[bufOffset-1] != '\n') complete = false;
 
 	if (Particle.connected()) {
 		// Terminate log message
-		buf[min(bufOffset, BUF_SIZE-1)] = '\0';
+		if(bufOffset > callbackBufferSize-1) bufOffset = callbackBufferSize-1;
+		callbackBuffer[bufOffset++] = '\0';
 
 		// Publish log message
-		Particle.publish("log", (char*)buf, PRIVATE);
+		logCallback(callbackBuffer, bufOffset);
 	}
 
 	// Start over at beginning of buffer
