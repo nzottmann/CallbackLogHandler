@@ -1,22 +1,23 @@
 #include "Particle.h"
 
-#include "SdFat.h"
-#include "SdCardLogHandlerRK.h"
+#include "CallbackLogHandler.h"
 
 SYSTEM_THREAD(ENABLED);
 
-const int SD_CHIP_SELECT = D5;
-SdFat sd;
+void callback(uint8_t* buf, size_t length) {
+	if(!Particle.connected()) return;
+	
+	Particle.publish("log", (char*)buf, PRIVATE);
+}
 
-
-// API change in 0.1.0: You must specify the size of the log handler buffer and call both logHandler.setup() and logHandler.loop()!
-SdCardLogHandler<2048> logHandler(sd, SD_CHIP_SELECT, SPI_FULL_SPEED);
+// A single publish message can be up to 622 bytes large
+CallbackLogHandler<2048, 622> logHandler(callback);
 
 size_t counter = 0;
 unsigned long lastCounterUpdate = 0;
 
 void setup() {
-	Serial.begin(9600);
+	Serial.begin(115200);
 
 	// You must call logHandler.setup() from setup()!
 	logHandler.setup();
@@ -26,7 +27,7 @@ void loop() {
 	// You must call logHandler.loop() from loop()!
 	logHandler.loop();
 
-	if (millis() - lastCounterUpdate >= 1000) {
+	if (millis() - lastCounterUpdate >= 10000) {
 		lastCounterUpdate = millis();
 		Log.info("testing counter=%d", counter++);
 	}
